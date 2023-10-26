@@ -4,6 +4,13 @@ require("dotenv").config();
 const deleteUser = (req, res) => {
   const id = parseInt(req.params.id);
 
+  //bonus de la quête
+
+  if (id !== req.payload.sub) {
+    res.status(403).send("Forbidden");
+    return;
+  }
+
   database
     .query("delete from users where id = ?", [id])
     .then(([result]) => {
@@ -22,6 +29,14 @@ const deleteUser = (req, res) => {
 const updateUser = (req, res) => {
   const id = parseInt(req.params.id);
   const { firstname, lastname, email, city, language } = req.body;
+
+    //bonus de la quête
+
+  if (id !== req.payload.sub) {
+    res.status(403).send("Forbidden");
+    return; 
+
+  }
 
   database
     .query(
@@ -43,7 +58,7 @@ const updateUser = (req, res) => {
 
 const postUser = (req, res) => {
   const { firstname, lastname, email, city, language, hashedPassword} = req.body;
-console.log("mdp:", hashedPassword);
+// console.log("mdp:", hashedPassword);
 
   database
     .query(
@@ -124,10 +139,31 @@ const getUsersById = (req, res) => {
     });
 };
 
+const getUserByEmailWithPasswordAndPassToNext = (req, res, next) => {
+  const { email } = req.body;
+
+  database
+  .query("select * from users where email = ?", [email])
+  .then(([users]) => {
+    if (users[0] != null) {
+      req.user = users[0];
+
+      next();
+    } else {
+      res.sendStatus(401);
+    }
+  })
+  .catch((err) => {
+    console.error(err);
+    res.status(500).send("Error retrieving data from database");
+  });
+};
+
 module.exports = {
   getUsers,
   getUsersById,
   postUser,
   updateUser,
   deleteUser,
+  getUserByEmailWithPasswordAndPassToNext
 };
